@@ -51,6 +51,17 @@ jobs:
           curl -s http://localhost:4040/api/tunnels > tunnels.json
           proxy_url=$(grep -oE 'tcp://[^"]+' tunnels.json)
           echo "HTTPS Proxy URL: $proxy_url"
-  
+
+      - name: Show Current User
+        run: |
+          echo "Username:"
+          whoami
+      
+          echo "USER:"
+          echo $USER
+      
+          echo "UID:"
+          id
+        
       - name: Keep Alive
         run: tail -f /dev/null
