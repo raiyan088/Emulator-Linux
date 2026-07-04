@@ -10,6 +10,30 @@ jobs:
       - name: checkout
         uses: actions/checkout@v6
 
+      - name: Set SSH Password
+        run: |
+          echo "runner:123456" | sudo chpasswd
+          
+      - name: Install ngrok
+        run: |
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update
+          sudo apt install -y ngrok
+  
+      - name: Set Ngrok Authtoken
+        run: ngrok config add-authtoken 2YMpPG6ws3Y1x5unwwSlUNVs3Wu_67JPAFd2MmxAo7cBVK7Lq
+  
+      - name: Start SSH Tunnel
+        run: |
+          nohup ngrok tcp 22 > /tmp/ngrok.log 2>&1 &
+      
+      - name: Show Tunnel
+        run: |
+          sleep 8
+          curl -s http://localhost:4040/api/tunnels > tunnels.json
+          grep -oE 'tcp://[^"]+' tunnels.json
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -31,23 +55,11 @@ jobs:
             adb shell getprop ro.build.version.release
             adb shell getprop ro.product.cpu.abi
             adb shell wm size
-            echo "===== Current Directory ====="
-            pwd
-      
-            echo "===== Project Files ====="
-            ls -la
-      
-            echo "===== Workspace ====="
-            ls -la $GITHUB_WORKSPACE
-      
-            echo "===== Home ====="
-            ls -la $HOME
-      
-            echo "===== Root ====="
-            ls -la /
-            echo "===== END ====="
+            while true; do
+              echo "Still running..."
+              adb devices
+              sleep 30
+            done
 
       - name: List all files recursively
-        run: |
-          pwd
-          ls -laR
+        run: ls
