@@ -7,62 +7,76 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Enable KVM
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Run Android Emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          target: google_apis
-          profile: pixel_5
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          disable-animations: true
-          script: |
-            adb wait-for-device
-            adb devices
-            adb shell getprop ro.build.version.release
-            adb shell getprop ro.product.cpu.abi
-            adb shell wm size
+      - name: Install Android SDK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          yes | sdkmanager --licenses
 
-      - name: Ls
-        run: ls
-        
-      - name: Set SSH Password
-        run: |
-          echo "runner:123456" | sudo chpasswd
-          
-      - name: Install ngrok
-        run: |
-          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
-          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-          sudo apt update
-          sudo apt install -y ngrok
-  
-      - name: Set Ngrok Authtoken
-        run: ngrok config add-authtoken 2YMpPG6ws3Y1x5unwwSlUNVs3Wu_67JPAFd2MmxAo7cBVK7Lq
-  
-      - name: Start SSH Tunnel
-        run: |
-          nohup ngrok tcp 22 > /tmp/ngrok.log 2>&1 &
-      
-      - name: Show Tunnel
-        run: |
-          sleep 8
-          curl -s http://localhost:4040/api/tunnels > tunnels.json
-          grep -oE 'tcp://[^"]+' tunnels.json
+          sdkmanager \
+            "platform-tools" \
+            "emulator" \
+            "platforms;android-30" \
+            "build-tools;36.0.0" \
+            "system-images;android-30;google_apis;x86_64"
 
-      - name: Show Current User
+      - name: Create AVD
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
-          echo "Current User: $(whoami)"
-          id
+          echo "no" | avdmanager create avd \
+            -n test \
+            -k "system-images;android-30;google_apis;x86_64" \
+            -d pixel_5
+
+          echo "hw.cpu.ncore=2" >> ~/.android/avd/test.avd/config.ini
+          echo "hw.ramSize=2048" >> ~/.android/avd/test.avd/config.ini
+
+      - name: Start Emulator
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          nohup $ANDROID_HOME/emulator/emulator \
+            @test \
+            -no-window \
+            -gpu swiftshader_indirect \
+            -noaudio \
+            -no-boot-anim \
+            -no-snapshot \
+            > emulator.log 2>&1 &
+
+      - name: Wait for Emulator
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          adb wait-for-device
+
+          until adb shell getprop sys.boot_completed | grep -q "1"
+          do
+            sleep 2
+          done
+
+          adb shell input keyevent 82
+
+          adb devices
+          adb shell getprop ro.build.version.release
+          adb shell getprop ro.product.cpu.abi
+          adb shell wm size
+
+      - name: Emulator Running Check
+        run: |
+          ps -ef | grep emulator || true
+          adb devices
           
-      - name: Keep Alive
-        run: tail -f /dev/null
