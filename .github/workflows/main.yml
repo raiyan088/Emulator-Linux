@@ -61,16 +61,30 @@ jobs:
       # =========================
       # Create AVD
       # =========================
-      - name: Create AVD
+      - name: Create AVD (Fixed Safe)
         run: |
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator
+      
           echo "no" | avdmanager create avd \
             -n test \
             -k "system-images;android-30;google_apis;x86_64" \
             -d pixel_5
-
-          echo "hw.cpu.ncore=2" >> ~/.android/avd/test.avd/config.ini
-          echo "hw.ramSize=2048" >> ~/.android/avd/test.avd/config.ini
-
+      
+          # Wait for AVD folder to exist
+          sleep 5
+      
+          # Ensure directory exists before writing config
+          if [ ! -d "$HOME/.android/avd/test.avd" ]; then
+            echo "AVD creation failed"
+            ls -R $HOME/.android
+            exit 1
+          fi
+      
+          # Safe config edit
+          echo "hw.cpu.ncore=2" >> $HOME/.android/avd/test.avd/config.ini
+          echo "hw.ramSize=2048" >> $HOME/.android/avd/test.avd/config.ini
+          
       # =========================
       # Start Emulator
       # =========================
