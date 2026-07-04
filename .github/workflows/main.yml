@@ -27,19 +27,30 @@ jobs:
           disable-animations: true
           script: |
             adb wait-for-device
-
-            echo "=== Devices ==="
             adb devices
-
-            echo "=== Android Version ==="
             adb shell getprop ro.build.version.release
-
-            echo "=== CPU ABI ==="
             adb shell getprop ro.product.cpu.abi
-
-            echo "=== Screen ==="
             adb shell wm size
 
-            echo "=== Emulator Ready ==="
-
-            sleep 60
+      - name: Install ngrok
+        run: |
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update
+          sudo apt install -y ngrok
+  
+      - name: Set Ngrok Authtoken
+        run: ngrok config add-authtoken 2YMpPG6ws3Y1x5unwwSlUNVs3Wu_67JPAFd2MmxAo7cBVK7Lq
+  
+      - name: Start Ngrok TCP Tunnel
+        run: nohup ngrok tcp 3128 > /tmp/ngrok.log 2>&1 &
+  
+      - name: Wait and Show Ngrok URL
+        run: |
+          sleep 8
+          curl -s http://localhost:4040/api/tunnels > tunnels.json
+          proxy_url=$(grep -oE 'tcp://[^"]+' tunnels.json)
+          echo "HTTPS Proxy URL: $proxy_url"
+  
+      - name: Keep Alive
+        run: tail -f /dev/null
