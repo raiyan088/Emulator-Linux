@@ -61,30 +61,43 @@ jobs:
       # =========================
       # Create AVD
       # =========================
-      - name: Create AVD (Fixed Safe)
+      - name: Debug Android Tools
         run: |
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$PATH
+      
+          echo "PATH=$PATH"
+      
+          which sdkmanager
+          which avdmanager
+          which emulator
+      
+          sdkmanager --list | head -20
+      
+          ls -R $ANDROID_SDK_ROOT/system-images || true
+
+
+      - name: Create AVD
+        run: |
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          export ANDROID_SDK_HOME=$HOME
+          export ANDROID_AVD_HOME=$HOME/.android/avd
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$PATH
+      
+          mkdir -p "$ANDROID_AVD_HOME"
       
           echo "no" | avdmanager create avd \
+            --verbose \
+            --force \
             -n test \
             -k "system-images;android-30;google_apis;x86_64" \
             -d pixel_5
       
-          # Wait for AVD folder to exist
-          sleep 5
+          echo "========== AVD LIST =========="
+          avdmanager list avd
       
-          # Ensure directory exists before writing config
-          if [ ! -d "$HOME/.android/avd/test.avd" ]; then
-            echo "AVD creation failed"
-            ls -R $HOME/.android
-            exit 1
-          fi
-      
-          # Safe config edit
-          echo "hw.cpu.ncore=2" >> $HOME/.android/avd/test.avd/config.ini
-          echo "hw.ramSize=2048" >> $HOME/.android/avd/test.avd/config.ini
-          
+          ls -R "$HOME/.android"
+    
       # =========================
       # Start Emulator
       # =========================
