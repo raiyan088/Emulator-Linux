@@ -32,6 +32,13 @@ jobs:
             adb shell getprop ro.product.cpu.abi
             adb shell wm size
 
+      - name: Ls
+        run: ls
+        
+      - name: Set SSH Password
+        run: |
+          echo "runner:123456" | sudo chpasswd
+          
       - name: Install ngrok
         run: |
           curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
