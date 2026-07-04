@@ -42,9 +42,6 @@ jobs:
       - name: Set Ngrok Authtoken
         run: ngrok config add-authtoken 2YMpPG6ws3Y1x5unwwSlUNVs3Wu_67JPAFd2MmxAo7cBVK7Lq
   
-      - name: Start Ngrok TCP Tunnel
-        run: nohup ngrok tcp 3128 > /tmp/ngrok.log 2>&1 &
-
       - name: Start SSH Tunnel
         run: |
           nohup ngrok tcp 22 > /tmp/ngrok.log 2>&1 &
@@ -57,13 +54,7 @@ jobs:
 
       - name: Show Current User
         run: |
-          echo "Username:"
-          whoami
-      
-          echo "USER:"
-          echo $USER
-      
-          echo "UID:"
+          echo "Current User: $(whoami)"
           id
           
       - name: Keep Alive
