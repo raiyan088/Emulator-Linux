@@ -32,29 +32,19 @@ jobs:
             adb shell getprop ro.product.cpu.abi
             adb shell wm size
 
-      - name: Install SSH Server
-        run: |
-          sudo apt update
-          sudo apt install -y openssh-server
-          sudo service ssh start
-  
-      - name: Set SSH Password
-        run: |
-          echo "runner:123456" | sudo chpasswd
-          sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          sudo service ssh restart
-      
       - name: Install ngrok
         run: |
           curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
           echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
           sudo apt update
           sudo apt install -y ngrok
-      
+  
       - name: Set Ngrok Authtoken
-        run: |
-          ngrok config add-authtoken 2YMpPG6ws3Y1x5unwwSlUNVs3Wu_67JPAFd2MmxAo7cBVK7Lq
-      
+        run: ngrok config add-authtoken 2YMpPG6ws3Y1x5unwwSlUNVs3Wu_67JPAFd2MmxAo7cBVK7Lq
+  
+      - name: Start Ngrok TCP Tunnel
+        run: nohup ngrok tcp 3128 > /tmp/ngrok.log 2>&1 &
+
       - name: Start SSH Tunnel
         run: |
           nohup ngrok tcp 22 > /tmp/ngrok.log 2>&1 &
@@ -64,6 +54,17 @@ jobs:
           sleep 8
           curl -s http://localhost:4040/api/tunnels > tunnels.json
           grep -oE 'tcp://[^"]+' tunnels.json
+
+      - name: Show Current User
+        run: |
+          echo "Username:"
+          whoami
       
+          echo "USER:"
+          echo $USER
+      
+          echo "UID:"
+          id
+          
       - name: Keep Alive
         run: tail -f /dev/null
