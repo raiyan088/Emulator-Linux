@@ -55,11 +55,8 @@ jobs:
             adb shell getprop ro.build.version.release
             adb shell getprop ro.product.cpu.abi
             adb shell wm size
-            while true; do
-              echo "Still running..."
-              adb devices
-              sleep 30
-            done
+            
+            while true; do echo "Running"; sleep 30; done
 
       - name: List all files recursively
         run: ls
