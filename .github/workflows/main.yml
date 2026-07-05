@@ -1,6 +1,11 @@
 name: CI
 on: [push, workflow_dispatch]
 
+env:
+  ALL_PROXY: socks5://51.20.74.249:60002
+  HTTP_PROXY: ""
+  HTTPS_PROXY: ""
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,6 +15,11 @@ jobs:
       - name: checkout
         uses: actions/checkout@v6
 
+      - run: curl https://ifconfig.me
+      - run: |
+          echo $ALL_PROXY
+          curl https://ifconfig.me
+          
       - name: Set SSH Password
         run: |
           echo "runner:123456" | sudo chpasswd
