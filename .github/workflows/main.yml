@@ -41,8 +41,9 @@ jobs:
       - name: Show Tunnel
         run: |
           sleep 8
-          curl -s http://localhost:4040/api/tunnels > tunnels.json
-          grep -oE 'tcp://[^"]+' tunnels.json
+          curl --noproxy "*" -s http://127.0.0.1:4040/api/tunnels > tunnels.json
+          cat tunnels.json
+          grep -oE 'tcp://[^"]+' tunnels.json || true
 
       - name: Enable KVM
         run: |
