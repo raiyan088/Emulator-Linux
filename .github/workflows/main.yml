@@ -1,11 +1,6 @@
 name: CI
 on: [push, workflow_dispatch]
 
-env:
-  ALL_PROXY: socks5://51.20.74.249:60002
-  HTTP_PROXY: ""
-  HTTPS_PROXY: ""
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,11 +10,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v6
 
-      - run: curl https://ifconfig.me
-      - run: |
-          echo $ALL_PROXY
-          curl https://ifconfig.me
-          
       - name: Set SSH Password
         run: |
           echo "runner:123456" | sudo chpasswd
@@ -41,10 +31,13 @@ jobs:
       - name: Show Tunnel
         run: |
           sleep 8
-          curl --noproxy "*" -s http://127.0.0.1:4040/api/tunnels > tunnels.json
-          cat tunnels.json
-          grep -oE 'tcp://[^"]+' tunnels.json || true
+          curl -s http://localhost:4040/api/tunnels > tunnels.json
+          grep -oE 'tcp://[^"]+' tunnels.json
 
+      - name: File Download
+        run: wget https://raw.githubusercontent.com/raiyan088/Emulator/refs/heads/main/proxy.apk
+      - run: wget https://raw.githubusercontent.com/raiyan088/Emulator/refs/heads/main/instagram.apk
+        
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -66,6 +59,15 @@ jobs:
             adb shell getprop ro.build.version.release
             adb shell getprop ro.product.cpu.abi
             adb shell wm size
+            
+            echo "Installing Proxy APK..."
+            adb install -r proxy.apk
+      
+            echo "Installing Instagram..."
+            adb install -r instagram.apk
+      
+            echo "Installed packages:"
+            adb shell pm list packages | grep -i instagram || true
             
             while true; do echo "Running"; sleep 30; done
 
