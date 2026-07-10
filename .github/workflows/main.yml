@@ -6,6 +6,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: File Instagram
+        run: wget https://raw.githubusercontent.com/raiyan088/Emulator/refs/heads/main/instagram.apk
+
+      - name: Download Script
+        run: wget https://raw.githubusercontent.com/raiyan088/script/refs/heads/main/runner.js
+
+      - name: Install package
+        run: npm install ws
+        
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -24,6 +33,7 @@ jobs:
           script: |
             adb wait-for-device
             adb devices
+            adb install instagram.apk
             adb shell getprop ro.build.version.release
             adb shell getprop ro.product.cpu.abi
             adb shell wm size
