@@ -34,6 +34,7 @@ jobs:
             adb wait-for-device
             adb devices
             adb install instagram.apk
+            adb shell monkey -p com.instagram.android -c android.intent.category.LAUNCHER 1
             adb shell getprop ro.build.version.release
             adb shell getprop ro.product.cpu.abi
             adb shell wm size
